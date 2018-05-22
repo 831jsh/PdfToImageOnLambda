@@ -1,0 +1,174 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket"
+    },
+    "ConvertPdfToImgLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/pdf2image-dev-convertPdfToImg"
+      }
+    },
+    "ConvertPdfToImgLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/pdf2image/dev/1527003093937-2018-05-22T15:31:33.937Z/hello.zip"
+        },
+        "FunctionName": "pdf2image-dev-convertPdfToImg",
+        "Handler": "com.serverless.Handler",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "s3TriggerRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "java8",
+        "Timeout": 6
+      },
+      "DependsOn": [
+        "ConvertPdfToImgLogGroup",
+        "s3TriggerRole"
+      ]
+    },
+    "ConvertPdfToImgLambdaVersionrws7I1jvRiWdlyzhvd96QIhGn5YjavvMtPl6XAE4a8": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "ConvertPdfToImgLambdaFunction"
+        },
+        "CodeSha256": "+m1KIiPYvchoe/k00W4rMKtb4Rqabmv/gwA4o+JGnj8="
+      }
+    },
+    "S3BucketPdfimage": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "pdf-image",
+        "NotificationConfiguration": {
+          "LambdaConfigurations": [
+            {
+              "Event": "s3:ObjectCreated:*",
+              "Function": {
+                "Fn::GetAtt": [
+                  "ConvertPdfToImgLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "prefix",
+                      "Value": "books/ebooks/"
+                    },
+                    {
+                      "Name": "suffix",
+                      "Value": ".pdf"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "DependsOn": [
+        "ConvertPdfToImgLambdaPermissionPdfimageS3"
+      ]
+    },
+    "ConvertPdfToImgLambdaPermissionPdfimageS3": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ConvertPdfToImgLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "s3.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:s3:::pdf-image"
+            ]
+          ]
+        }
+      }
+    },
+    "s3TriggerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "RoleName": "S3TriggerRole",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "forLambdaInvoke",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:*"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "forS3Trigger",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:*"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      }
+    },
+    "ConvertPdfToImgLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "ConvertPdfToImgLambdaVersionrws7I1jvRiWdlyzhvd96QIhGn5YjavvMtPl6XAE4a8"
+      }
+    }
+  }
+}
