@@ -10,9 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-// import org.apache.log4j.Logger;
+// // import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
+import com.amazonaws.services.lambda.model.InvokeAsyncResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.event.S3EventNotification;
@@ -23,7 +24,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayResponse> {
-	// private static final Logger LOG = Logger.getLogger(Handler.class);
+	// // // // private static final Logger LOG = Logger.getLogger(Handler.class);
 
 	@Override
 	public ApiGatewayResponse handleRequest(Map<String, Object> input, Context context) {
@@ -47,8 +48,10 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 	}
 
 	private PDDocument getPDFDocument(String bucketName, String key) throws IOException {
+		// LOG.info("getPDFDocument start");
 		S3 s3Client = new S3(bucketName, key);
 		S3ObjectInputStream objectData = s3Client.getObject();
+		// LOG.info(key.replace("/", "_"));
 		File file = new File("/tmp/" + key.replace("/", "_"));
 		FileOutputStream fos = new FileOutputStream(file);
 		byte[] read_buf = new byte[1024];
@@ -59,20 +62,24 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 		objectData.close();
 		fos.close();
 
+		// LOG.info("getPDFDocument end");
 		return PDDocument.load(file);
 	}
 
 	private void s3EventTrigger(Map<String, Object> input) throws IOException {
 		String inputJson = Jackson.toJsonString(input);
+		// LOG.info(inputJson);
 		S3EventNotification s3 = S3EventNotification.parseJson(inputJson);
 		List<S3EventNotification.S3EventNotificationRecord> records = s3.getRecords();
 
 		for (S3EventNotification.S3EventNotificationRecord event : records) {
 			String bucketName = event.getS3().getBucket().getName();
 			String key = URLDecoder.decode(event.getS3().getObject().getKey(), "UTF-8");
+			// LOG.info(bucketName + key);
 			PDDocument pdf = getPDFDocument(bucketName, key);
 			String baseURL = String.format("https://s3.ap-northeast-2.amazonaws.com/%s/%s", bucketName, key);
-			File indexFile = new File(String.format("/tmp/%s.json", key));
+			// LOG.info(baseURL);
+			File indexFile = new File(String.format("/tmp/%s.json", key.replace("/", "_")));
 
 			JsonObject indexJson = new JsonObject();
 			JsonArray indexPages = new JsonArray();
@@ -80,10 +87,12 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 			indexJson.addProperty("defaultBackgroundImageURI", "");
 
 			int numberOfPages = pdf.getNumberOfPages();
+			// LOG.info("page is " + numberOfPages);
 			for (int pageNum = 0; pageNum < numberOfPages; pageNum++) {
 				String pageId = UUID.randomUUID().toString();
 				RequestConvert request = new RequestConvert(bucketName, key, pageNum, pageId);
-				request.invoke();
+				InvokeAsyncResult result = request.invoke();
+				// LOG.info(result.toString());
 				JsonObject indexPage = new JsonObject();
 				indexPage.addProperty("backgroundImageURI", String.format("%s/%d-%s.png", baseURL, pageNum, pageId));
 				indexPages.add(indexPage);
@@ -95,6 +104,7 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 			FileWriter osFile = new FileWriter(indexFile);
 			osFile.write(gson.toJson(indexJson));
 			osFile.close();
+			// LOG.info("json: " + gson.toJson(indexJson));
 			S3 s3Client = new S3(bucketName, String.format("%s/index.json", key));
 			s3Client.putObject(indexFile);
 		}
