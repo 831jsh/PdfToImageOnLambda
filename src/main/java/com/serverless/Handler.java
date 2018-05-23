@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +95,8 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 				InvokeAsyncResult result = request.invoke();
 				// LOG.info(result.toString());
 				JsonObject indexPage = new JsonObject();
-				indexPage.addProperty("backgroundImageURI", String.format("%s/%d-%s.png", baseURL, pageNum, pageId));
+				String backgroundImageURI = String.format("%s/%d-%s.png", baseURL, pageNum, pageId);
+				indexPage.addProperty("backgroundImageURI", URLEncoder.encode(backgroundImageURI, "UTF-8"));
 				indexPages.add(indexPage);
 			}
 
