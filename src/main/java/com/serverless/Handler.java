@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-// // import org.apache.log4j.Logger;
+// import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import com.amazonaws.services.lambda.model.InvokeAsyncResult;
@@ -25,7 +25,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayResponse> {
-	// // // // private static final Logger LOG = Logger.getLogger(Handler.class);
+	// private static final Logger LOG = Logger.getLogger(Handler.class);
+	private static final String extension = "png";
 
 	@Override
 	public ApiGatewayResponse handleRequest(Map<String, Object> input, Context context) {
@@ -78,7 +79,7 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 			String key = URLDecoder.decode(event.getS3().getObject().getKey(), "UTF-8");
 			// LOG.info(bucketName + key);
 			PDDocument pdf = getPDFDocument(bucketName, key);
-			String baseURL = String.format("https://s3.ap-northeast-2.amazonaws.com/%s/%s", bucketName, key);
+			String baseURL = String.format("https://s3.ap-northeast-2.amazonaws.com/%s/%s", bucketName, URLEncoder.encode(key, "UTF-8"));
 			// LOG.info(baseURL);
 			File indexFile = new File(String.format("/tmp/%s.json", key.replace("/", "_")));
 
@@ -91,12 +92,12 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 			// LOG.info("page is " + numberOfPages);
 			for (int pageNum = 0; pageNum < numberOfPages; pageNum++) {
 				String pageId = UUID.randomUUID().toString();
-				RequestConvert request = new RequestConvert(bucketName, key, pageNum, pageId);
+				RequestConvert request = new RequestConvert(bucketName, key, pageNum, pageId, extension);
 				InvokeAsyncResult result = request.invoke();
 				// LOG.info(result.toString());
 				JsonObject indexPage = new JsonObject();
-				String backgroundImageURI = String.format("%s/%d-%s.png", baseURL, pageNum, pageId);
-				indexPage.addProperty("backgroundImageURI", URLEncoder.encode(backgroundImageURI, "UTF-8"));
+				String backgroundImageURI = String.format("%s/%d-%s.%s", baseURL, pageNum, pageId, extension);
+				indexPage.addProperty("backgroundImageURI", backgroundImageURI);
 				indexPages.add(indexPage);
 			}
 
@@ -106,6 +107,7 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 			FileWriter osFile = new FileWriter(indexFile);
 			osFile.write(gson.toJson(indexJson));
 			osFile.close();
+			pdf.close();
 			// LOG.info("json: " + gson.toJson(indexJson));
 			S3 s3Client = new S3(bucketName, String.format("%s/index.json", key));
 			s3Client.putObject(indexFile);
@@ -117,12 +119,13 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 		String key = (String) input.get("key");
 		int pageNum = (int) input.get("pageNum");
 		String pageId = (String) input.get("pageId");
+		String extension = (String) input.get("extension");
 
-		String extension = "png";
 		PDDocument document = getPDFDocument(bucketName, key);
 		PdfToImg inst = new PdfToImg(document);
 		File image = inst.convert(pageNum, extension);
 		S3 s3Client = new S3(bucketName, String.format("%s/%d-%s.%s", key, pageNum, pageId, extension));
 		s3Client.putObject(image);
+		document.close();
 	}
 }

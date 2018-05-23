@@ -13,12 +13,14 @@ public class RequestConvert {
     private String key;
     private int pageNum;
     private String pageId;
+    private String extension;
 
-    public RequestConvert(String bucket, String key, int pageNum, String pageId) {
+    public RequestConvert(String bucket, String key, int pageNum, String pageId, String extension) {
         this.bucket = bucket;
         this.key = key;
         this.pageNum = pageNum;
         this.pageId = pageId;
+        this.extension = extension;
     }
 
     public InvokeAsyncResult invoke() {
@@ -40,6 +42,7 @@ public class RequestConvert {
         jsonObject.addProperty("key", key);
         jsonObject.addProperty("pageNum", pageNum);
         jsonObject.addProperty("pageId", pageId);
+        jsonObject.addProperty("extension", extension);
 
         return gson.toJson(jsonObject);
     }
