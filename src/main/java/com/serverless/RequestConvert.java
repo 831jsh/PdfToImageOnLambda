@@ -2,9 +2,9 @@ package com.serverless;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.lambda.AWSLambda;
-import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
-import com.amazonaws.services.lambda.model.InvokeAsyncRequest;
-import com.amazonaws.services.lambda.model.InvokeAsyncResult;
+import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.lambda.model.InvokeRequest;
+import com.amazonaws.services.lambda.model.InvokeResult;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -23,21 +23,21 @@ public class RequestConvert {
         this.extension = extension;
     }
 
-    public InvokeAsyncResult invoke() {
-        AWSLambdaAsyncClientBuilder builder = AWSLambdaAsyncClientBuilder.standard()
+    public InvokeResult invoke() {
+        AWSLambdaClientBuilder builder = AWSLambdaClientBuilder.standard()
                 .withRegion(Regions.fromName("ap-northeast-2"));
         AWSLambda client = builder.build();
-
         String payload = getPayload();
-        InvokeAsyncRequest request = new InvokeAsyncRequest().withFunctionName("pdf2image-dev-convertPdfToImg")
-                .withInvokeArgs(payload);
-        InvokeAsyncResult invoke = client.invokeAsync(request);
+        InvokeRequest request = new InvokeRequest().withFunctionName("pdf2image-dev-convertPdfToImg")
+                .withPayload(payload);
+        InvokeResult invoke = client.invoke(request);
         return invoke;
     }
 
     private String getPayload() {
         Gson gson = new Gson();
         JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("eventName", "s3PutImageFromPdfPage");
         jsonObject.addProperty("bucketName", bucket);
         jsonObject.addProperty("key", key);
         jsonObject.addProperty("pageNum", pageNum);

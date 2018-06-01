@@ -19,7 +19,8 @@ dependencies {
         'com.fasterxml.jackson.core:jackson-annotations:2.8.5',
         'org.apache.pdfbox:pdfbox:2.0.4',
         'com.google.code.gson:gson:2.8.4',
-        'com.squareup.okhttp3:okhttp:3.10.0'
+        // 'com.squareup.okhttp3:okhttp:3.10.0',
+        // 'io.reactivex.rxjava2:rxjava:2.1.14'
     )
 }
 
