@@ -1,8 +1,11 @@
 package com.serverless;
 
+import java.util.concurrent.Future;
+
+import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.lambda.AWSLambda;
-import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.lambda.AWSLambdaAsync;
+import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
 import com.google.gson.Gson;
@@ -14,6 +17,7 @@ public class RequestConvert {
     private int pageNum;
     private String pageId;
     private String extension;
+    private int chance = 3;
 
     public RequestConvert(String bucket, String key, int pageNum, String pageId, String extension) {
         this.bucket = bucket;
@@ -23,14 +27,14 @@ public class RequestConvert {
         this.extension = extension;
     }
 
-    public InvokeResult invoke() {
-        AWSLambdaClientBuilder builder = AWSLambdaClientBuilder.standard()
+    public Future<InvokeResult> invoke() {
+        AWSLambdaAsyncClientBuilder builder = AWSLambdaAsyncClientBuilder.standard()
                 .withRegion(Regions.fromName("ap-northeast-2"));
-        AWSLambda client = builder.build();
+        AWSLambdaAsync client = builder.build();
         String payload = getPayload();
         InvokeRequest request = new InvokeRequest().withFunctionName("pdf2image-dev-convertPdfToImg")
                 .withPayload(payload);
-        InvokeResult invoke = client.invoke(request);
+        Future<InvokeResult> invoke = client.invokeAsync(request, new AsyncLambdaHandler());
         return invoke;
     }
 
@@ -45,5 +49,18 @@ public class RequestConvert {
         jsonObject.addProperty("extension", extension);
 
         return gson.toJson(jsonObject);
+    }
+
+    private class AsyncLambdaHandler implements AsyncHandler<InvokeRequest, InvokeResult> {
+        public void onSuccess(InvokeRequest req, InvokeResult res) {
+
+        }
+
+        public void onError(Exception e) {
+            if (chance > 0) {
+                chance--;
+                invoke();
+            }
+        }
     }
 }

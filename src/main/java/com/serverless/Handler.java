@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -72,6 +73,7 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 
 		int numberOfPages = pdf.getNumberOfPages();
 		LOG.info("page is " + numberOfPages);
+
 		for (int pageNum = 0; pageNum < numberOfPages; pageNum++) {
 			indexPages.add(subProcess(bucketName, key, pageNum, baseURL, extension));
 		}
@@ -93,7 +95,7 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 	private JsonObject subProcess(String bucketName, String key, int pageNum, String baseURL, String extension) {
 		String pageId = UUID.randomUUID().toString();
 		RequestConvert request = new RequestConvert(bucketName, key, pageNum, pageId, extension);
-		InvokeResult result = request.invoke();
+		Future<InvokeResult> result = request.invoke();
 		// Single.just(result);
 		LOG.info(result.toString());
 		JsonObject indexPage = new JsonObject();
