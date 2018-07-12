@@ -11,7 +11,7 @@
 #
 # Happy Coding!
 
-service: pdf2image
+service: pdfToImage
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -22,10 +22,8 @@ provider:
   runtime: java8
   region: ap-northeast-2
   role: s3TriggerRole
+  memorySize: 2048
   timeout: 300
-
-custom:
-  bucket: "cdn.erion.kr"
 
 # you can add packaging information here
 package:
@@ -36,10 +34,10 @@ functions:
     handler: com.serverless.Handler
     # events:
     #   - s3:
-    #       bucket: ${self:custom.bucket}
+    #       bucket: test.convert.pdf.to.image
     #       event: s3:ObjectCreated:*
     #       rules:
-    #         - prefix: books/ebooks/
+    #         # - prefix: books/ebooks/
     #         - suffix: .pdf
 
 # you can add CloudFormation resource templates here

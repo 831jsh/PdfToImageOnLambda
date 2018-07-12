@@ -32,7 +32,7 @@ public class RequestConvert {
                 .withRegion(Regions.fromName("ap-northeast-2"));
         AWSLambdaAsync client = builder.build();
         String payload = getPayload();
-        InvokeRequest request = new InvokeRequest().withFunctionName("pdf2image-dev-convertPdfToImg")
+        InvokeRequest request = new InvokeRequest().withFunctionName("pdfToImage-dev-convertPdfToImg")
                 .withPayload(payload);
         Future<InvokeResult> invoke = client.invokeAsync(request, new AsyncLambdaHandler());
         return invoke;
@@ -41,7 +41,7 @@ public class RequestConvert {
     private String getPayload() {
         Gson gson = new Gson();
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("eventName", "s3PutImageFromPdfPage");
+        jsonObject.addProperty("eventName", "convertToImage");
         jsonObject.addProperty("bucketName", bucket);
         jsonObject.addProperty("key", key);
         jsonObject.addProperty("pageNum", pageNum);
