@@ -53,7 +53,7 @@ public class Handler implements RequestHandler<Map<String, Object>, ApiGatewayRe
 
 	private String mainProcess(String bucketName, String key, String extension) throws IOException {
 		PDF pdf = new PDF(new S3(bucketName).readFile(key));
-		String baseURL = String.format("https://s3.ap-northeast-2.amazonaws.com/%s/%s", bucketName, URLEncoder.encode(key, "UTF-8"));
+		String baseURL = String.format("https://s3.%s.amazonaws.com/%s/%s", System.getenv("REGION"), bucketName, URLEncoder.encode(key, "UTF-8"));
 		File indexFile = new File(String.format("/tmp/%s.json", key.replace("/", "_")));
 		FileWriter osFile = new FileWriter(indexFile);
 

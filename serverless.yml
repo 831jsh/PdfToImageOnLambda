@@ -20,10 +20,12 @@ service: pdfToImage
 provider:
   name: aws
   runtime: java8
-  region: ap-northeast-2
+  region: ${self:provider.environment.REGION}
   role: s3TriggerRole
   memorySize: 2048
   timeout: 300
+  environment:
+    REGION: ap-northeast-2
 
 # you can add packaging information here
 package:
